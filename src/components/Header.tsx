@@ -6,7 +6,7 @@ function Header() {
         <div className="relative z-10">
           <div className="max-w-[85rem] mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
             <div className="max-w-2xl text-center mx-auto">
-              <p className="inline-block text-sm font-medium bg-clip-text bg-gradient-to-r from-yellow-600 to-black text-transparent dark:from-blue-400 dark:to-violet-400">
+              <p className="inline-block text-md font-medium bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600 text-transparent dark:from-blue-400 dark:to-violet-400">
                 How about that weather...
               </p>
 
