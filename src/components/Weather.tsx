@@ -402,7 +402,7 @@ function Weather() {
       <div className="globe-container">
         <Globe
           backgroundColor="rgba(0,0,0,0)"
-          globeImageUrl="/earth-blue-marble.jpg"
+          globeImageUrl="/weather-app/img/earth-blue-marble.jpg"
           showGraticules={true}
           showAtmosphere={false}
           onGlobeClick={getMapCoordinates}
