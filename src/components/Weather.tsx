@@ -44,13 +44,9 @@ function Weather() {
   const key = import.meta.env.VITE_WEATHER_API_KEY;
 
   function getLocation() {
-    console.log('getting location');
-
     const locationInput = document.querySelector(
       '#city-search'
     ) as HTMLInputElement;
-
-    console.log(`${locationInput.value}`);
 
     setSearchLocation(locationInput.value);
   }
@@ -76,33 +72,25 @@ function Weather() {
     ) as HTMLElement;
     errorMessage.innerText = ``;
 
-    console.log('Current Search Location is:', searchLocation);
     getWeather();
 
     async function getWeather() {
-      console.log('run GetWeather');
-
       const geoRequestInfo = await getGeoData();
 
       if (geoRequestInfo.ok) {
         if (geoRequestInfo.geoDataLength > 0) {
           const temp = await getWeatherData();
 
-          console.log('Temperature', temp);
-
           render(temp);
         } else {
-          console.log('handle empty getGeoData response');
           errorMessage.innerText = `The city you're searching for couldn't be found. Try again.`;
         }
       } else {
-        console.log('handle bad getGeoData request');
         errorMessage.innerText = `The city you're searching for couldn't be found. Try again.`;
       }
     }
 
     async function getGeoData() {
-      console.log('run getGeoData');
       // if search location is blank then just return as though request was bad
       if (searchLocation == '' || !searchLocation)
         return { ok: false, geoDataLength: 0 };
@@ -117,15 +105,19 @@ function Weather() {
 
       const geoData = await geoResponse.json();
 
-      console.log('geoResponse', geoResponse);
-
       // set lat and lon only if the request is ok
       if (geoResponse.ok) {
-        console.log('geoData', geoData);
-
         if (geoData.length > 0) {
           lat = `${parseFloat(geoData[0].lat)}`;
           lon = `${parseFloat(geoData[0].lon)}`;
+
+          const clickData = {
+            lat: parseFloat(geoData[0].lat),
+            lng: parseFloat(geoData[0].lon),
+            size: 16,
+            color: 'red',
+          };
+          setMarkerData([clickData]);
         }
 
         locationList = geoData;
@@ -136,7 +128,6 @@ function Weather() {
     }
 
     async function getWeatherData() {
-      console.log('run getWeatherData');
       const weatherResponse = await fetch(
         `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=${currentUnitSystem}&appid=${key}`,
         {
@@ -144,19 +135,11 @@ function Weather() {
         }
       );
 
-      console.log('weatherResponse', weatherResponse);
-
       const weatherData = await weatherResponse.json();
-
-      console.log('log weather data:');
-      console.log(weatherData);
-      console.log(weatherData.main.temp);
-
       return weatherData.main.temp;
     }
 
     async function render(temp: number) {
-      console.log('run render');
       const city = document.querySelector('.city') as HTMLElement;
       const state = document.querySelector('.state') as HTMLElement;
       const country = document.querySelector('.country') as HTMLElement;
@@ -165,7 +148,6 @@ function Weather() {
       city.innerText = `${locationList[0].name}, `;
       state.innerText = `${locationList[0].state}, `;
       country.innerText = `${locationList[0].country}`;
-      // console.log(getWeatherData());
       temperature.innerText = `${temp} ${currentTempUnit}`;
     }
   }, [searchLocation]);
@@ -174,31 +156,23 @@ function Weather() {
   const globeEl = useRef(undefined);
 
   function getMapCoordinates(e: Coordinates) {
-    console.log(e);
-
     setMapLat(e.lat);
     setMapLon(e.lng);
 
     const clickData = { lat: e.lat, lng: e.lng, size: 16, color: 'red' };
-
     setMarkerData([clickData]);
   }
 
-  // Position globe to AU on mount
+  // Position globe to current search location
   useEffect(() => {
     if (globeEl.current) {
       (globeEl.current as GlobeMethods).pointOfView({
-        lat: -20,
-        lng: 140,
+        lat: markerData[0].lat,
+        lng: markerData[0].lng,
         altitude: 3,
       });
     }
-  }, []);
-
-  // useEffect(() => {
-  //   console.log('Map Lat', mapLat);
-  //   console.log('Map Lon', mapLon);
-  // }, [mapLat, mapLon]);
+  }, [markerData]);
 
   useEffect(() => {
     // clear any previous error messages
@@ -207,16 +181,10 @@ function Weather() {
     ) as HTMLElement;
     errorMessage.innerText = ``;
 
-    console.log('Current Coordinates are:', mapLat, mapLon);
-
     getWeatherForMap();
 
     async function getWeatherForMap() {
-      console.log('run GetWeatherMap');
-
       const temp = await getWeatherDataForMap();
-
-      console.log('Temperature', temp);
 
       if (temp) {
         renderForMap(temp);
@@ -224,8 +192,6 @@ function Weather() {
     }
 
     async function getWeatherDataForMap() {
-      console.log('run getWeatherData');
-
       if (mapLat && mapLon) {
         const weatherResponse = await fetch(
           `https://api.openweathermap.org/data/2.5/weather?lat=${mapLat}&lon=${mapLon}&units=${currentUnitSystem}&appid=${key}`,
@@ -234,27 +200,18 @@ function Weather() {
           }
         );
 
-        console.log('weatherResponse', weatherResponse);
-
         const weatherData = await weatherResponse.json();
-
-        console.log('log weather data:');
-        console.log(weatherData);
-        console.log(weatherData.main.temp);
 
         return weatherData.main.temp;
       }
     }
 
     async function renderForMap(temp: number) {
-      console.log('run render');
       const city = document.querySelector('.city') as HTMLElement;
       const state = document.querySelector('.state') as HTMLElement;
       const country = document.querySelector('.country') as HTMLElement;
       const temperature = document.querySelector('.temperature') as HTMLElement;
 
-      // city.innerText = `Lat: ${mapLat}, `;
-      // state.innerText = `Lon: ${mapLon}`;
       city.innerText = `${convertToCoordinates(mapLat as number, 'lat')}, `;
       state.innerText = `${convertToCoordinates(mapLon as number, 'lon')}`;
       country.innerText = '';
@@ -263,8 +220,7 @@ function Weather() {
   }, [mapLat, mapLon]);
 
   // I want to update the temperature for the last location, previously it was
-  // updating for the last search only as both use effects were being triggered
-
+  // updating for the last search only as both useEffects were being triggered
   useEffect(() => {
     let lat: string;
     let lon: string;
@@ -279,9 +235,6 @@ function Weather() {
     const city = document.querySelector('.city') as HTMLElement;
     const cityFirstChar = city.innerText[0];
 
-    console.log('Current Search Location is:', searchLocation);
-    console.log('Current Coordinates are:', mapLat, mapLon);
-
     if (isNaN(parseInt(cityFirstChar))) {
       getWeather();
     } else {
@@ -289,11 +242,7 @@ function Weather() {
     }
 
     async function getWeatherForMap() {
-      console.log('run GetWeatherMap');
-
       const temp = await getWeatherDataForMap();
-
-      console.log('Temperature', temp);
 
       if (temp) {
         renderForMap(temp);
@@ -301,8 +250,6 @@ function Weather() {
     }
 
     async function getWeatherDataForMap() {
-      console.log('run getWeatherData');
-
       if (mapLat && mapLon) {
         const weatherResponse = await fetch(
           `https://api.openweathermap.org/data/2.5/weather?lat=${mapLat}&lon=${mapLon}&units=${currentUnitSystem}&appid=${key}`,
@@ -311,27 +258,18 @@ function Weather() {
           }
         );
 
-        console.log('weatherResponse', weatherResponse);
-
         const weatherData = await weatherResponse.json();
-
-        console.log('log weather data:');
-        console.log(weatherData);
-        console.log(weatherData.main.temp);
 
         return weatherData.main.temp;
       }
     }
 
     async function renderForMap(temp: number) {
-      console.log('run render');
       const city = document.querySelector('.city') as HTMLElement;
       const state = document.querySelector('.state') as HTMLElement;
       const country = document.querySelector('.country') as HTMLElement;
       const temperature = document.querySelector('.temperature') as HTMLElement;
 
-      // city.innerText = `Lat: ${mapLat}, `;
-      // state.innerText = `Lon: ${mapLon}`;
       city.innerText = `${convertToCoordinates(mapLat as number, 'lat')}, `;
       state.innerText = `${convertToCoordinates(mapLon as number, 'lon')}`;
       country.innerText = '';
@@ -339,29 +277,22 @@ function Weather() {
     }
 
     async function getWeather() {
-      console.log('run GetWeather');
-
       const geoRequestInfo = await getGeoData();
 
       if (geoRequestInfo.ok) {
         if (geoRequestInfo.geoDataLength > 0) {
           const temp = await getWeatherData();
 
-          console.log('Temperature', temp);
-
           render(temp);
         } else {
-          console.log('handle empty getGeoData response');
           errorMessage.innerText = `The city you're searching for couldn't be found. Try again.`;
         }
       } else {
-        console.log('handle bad getGeoData request');
         errorMessage.innerText = `The city you're searching for couldn't be found. Try again.`;
       }
     }
 
     async function getGeoData() {
-      console.log('run getGeoData');
       // if search location is blank then just return as though request was bad
       if (searchLocation == '' || !searchLocation)
         return { ok: false, geoDataLength: 0 };
@@ -376,12 +307,8 @@ function Weather() {
 
       const geoData = await geoResponse.json();
 
-      console.log('geoResponse', geoResponse);
-
       // set lat and lon only if the request is ok
       if (geoResponse.ok) {
-        console.log('geoData', geoData);
-
         if (geoData.length > 0) {
           lat = `${parseFloat(geoData[0].lat)}`;
           lon = `${parseFloat(geoData[0].lon)}`;
@@ -395,7 +322,6 @@ function Weather() {
     }
 
     async function getWeatherData() {
-      console.log('run getWeatherData');
       const weatherResponse = await fetch(
         `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=${currentUnitSystem}&appid=${key}`,
         {
@@ -403,19 +329,12 @@ function Weather() {
         }
       );
 
-      console.log('weatherResponse', weatherResponse);
-
       const weatherData = await weatherResponse.json();
-
-      console.log('log weather data:');
-      console.log(weatherData);
-      console.log(weatherData.main.temp);
 
       return weatherData.main.temp;
     }
 
     async function render(temp: number) {
-      console.log('run render');
       const city = document.querySelector('.city') as HTMLElement;
       const state = document.querySelector('.state') as HTMLElement;
       const country = document.querySelector('.country') as HTMLElement;
@@ -424,7 +343,6 @@ function Weather() {
       city.innerText = `${locationList[0].name}, `;
       state.innerText = `${locationList[0].state}, `;
       country.innerText = `${locationList[0].country}`;
-      // console.log(getWeatherData());
       temperature.innerText = `${temp} ${currentTempUnit}`;
     }
   }, [currentTempUnit, currentUnitSystem]);
@@ -442,6 +360,7 @@ function Weather() {
           className="max-w-lg p-3 pl-6 block w-80 border-gray-200 rounded-md text-sm"
           placeholder="Search for City"
         ></input>
+
         <button
           type="button"
           id="search-btn"
@@ -450,6 +369,7 @@ function Weather() {
         >
           What's the Weather Like?
         </button>
+
         <button
           type="button"
           id="temperature-units"
@@ -466,11 +386,6 @@ function Weather() {
 
       <div className="weather-data">
         <div className="data-wrapper flex flex-col items-center gap-4 bg-white max-w-2xl m-auto rounded p-4 max-lg:max-w-xs max-lg:px-8">
-          {/* <div className="location-list">
-            <select name="locations" id="locations">
-              <option value="">---</option>
-            </select>
-          </div> */}
           <div>
             <span className="city">Sydney, </span>
             <span className="state">New South Wales, </span>
@@ -479,6 +394,7 @@ function Weather() {
           <div className="temperature">00.00 °C</div>
         </div>
       </div>
+
       <small className="display-info">
         Temperature is currently displaying in {currentTempUnit}
       </small>
@@ -527,35 +443,4 @@ export default Weather;
     lat={lat}&lon={lon}&appid={API key}
 
     units can be 'standard' (default), 'metric' (C), 'imperial' (F)
-*/
-
-/*
-const locationDropDown = document.querySelector(
-'#locations'
-) as HTMLSelectElement;
-
-locationDropDown?.addEventListener('change', getWeatherForSelection);
-  
-function getWeatherForSelection() {
-    setLat(locationList[Number(locationDropDown.value)].lat);
-    setLon(locationList[Number(locationDropDown.value)].lon);
-
-    getWeatherData();
-    render();
-}
-
-function addLocationList() {
-// const selectLocations = document.querySelector('#locations');
-
-// selectLocations?.replaceChildren();
-
-// console.log(locationList.length);
-
-for (let i = 0; i < locationList.length; i++) {
-    const option = document.createElement('option');
-    option.value = `${i}`;
-    option.innerText = `${locationList[i].name}, ${locationList[i].state}, ${locationList[i].country}, lat: ${locationList[i].lat}, lon: ${locationList[i].lon}`;
-    //   selectLocations?.appendChild(option);
-}
-}
 */
