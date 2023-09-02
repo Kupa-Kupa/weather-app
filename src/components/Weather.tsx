@@ -152,7 +152,7 @@ function Weather() {
       // console.log(getWeatherData());
       temperature.innerText = `${temp} ${currentTempUnit}`;
     }
-  }, [searchLocation, currentTempUnit, currentUnitSystem, key]);
+  }, [searchLocation]);
 
   // Globe code
   const globeEl = useRef(undefined);
@@ -240,7 +240,174 @@ function Weather() {
       country.innerText = '';
       temperature.innerText = `${temp} ${currentTempUnit}`;
     }
-  }, [currentTempUnit, currentUnitSystem, key, mapLat, mapLon]);
+  }, [mapLat, mapLon]);
+
+  // I want to update the temperature for the last location, previously it was
+  // updating for the last search only as both use effects were being triggered
+
+  useEffect(() => {
+    let lat: string;
+    let lon: string;
+    let locationList: Array<Location>;
+
+    // clear any previous error messages
+    const errorMessage = document.querySelector(
+      '.error-message'
+    ) as HTMLElement;
+    errorMessage.innerText = ``;
+
+    const city = document.querySelector('.city') as HTMLElement;
+    const cityFirstChar = city.innerText[0];
+
+    console.log('Current Search Location is:', searchLocation);
+    console.log('Current Coordinates are:', mapLat, mapLon);
+
+    if (isNaN(parseInt(cityFirstChar))) {
+      getWeather();
+    } else {
+      getWeatherForMap();
+    }
+
+    async function getWeatherForMap() {
+      console.log('run GetWeatherMap');
+
+      const temp = await getWeatherDataForMap();
+
+      console.log('Temperature', temp);
+
+      if (temp) {
+        renderForMap(temp);
+      }
+    }
+
+    async function getWeatherDataForMap() {
+      console.log('run getWeatherData');
+
+      if (mapLat && mapLon) {
+        const weatherResponse = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${mapLat}&lon=${mapLon}&units=${currentUnitSystem}&appid=${key}`,
+          {
+            mode: 'cors',
+          }
+        );
+
+        console.log('weatherResponse', weatherResponse);
+
+        const weatherData = await weatherResponse.json();
+
+        console.log('log weather data:');
+        console.log(weatherData);
+        console.log(weatherData.main.temp);
+
+        return weatherData.main.temp;
+      }
+    }
+
+    async function renderForMap(temp: number) {
+      console.log('run render');
+      const city = document.querySelector('.city') as HTMLElement;
+      const state = document.querySelector('.state') as HTMLElement;
+      const country = document.querySelector('.country') as HTMLElement;
+      const temperature = document.querySelector('.temperature') as HTMLElement;
+
+      // city.innerText = `Lat: ${mapLat}, `;
+      // state.innerText = `Lon: ${mapLon}`;
+      city.innerText = `${convertToCoordinates(mapLat as number, 'lat')}, `;
+      state.innerText = `${convertToCoordinates(mapLon as number, 'lon')}`;
+      country.innerText = '';
+      temperature.innerText = `${temp} ${currentTempUnit}`;
+    }
+
+    async function getWeather() {
+      console.log('run GetWeather');
+
+      const geoRequestInfo = await getGeoData();
+
+      if (geoRequestInfo.ok) {
+        if (geoRequestInfo.geoDataLength > 0) {
+          const temp = await getWeatherData();
+
+          console.log('Temperature', temp);
+
+          render(temp);
+        } else {
+          console.log('handle empty getGeoData response');
+          errorMessage.innerText = `The city you're searching for couldn't be found. Try again.`;
+        }
+      } else {
+        console.log('handle bad getGeoData request');
+        errorMessage.innerText = `The city you're searching for couldn't be found. Try again.`;
+      }
+    }
+
+    async function getGeoData() {
+      console.log('run getGeoData');
+      // if search location is blank then just return as though request was bad
+      if (searchLocation == '' || !searchLocation)
+        return { ok: false, geoDataLength: 0 };
+
+      // get lat and lon of location
+      const geoResponse = await fetch(
+        `https://api.openweathermap.org/geo/1.0/direct?q=${searchLocation}&limit=5&appid=${key}`,
+        {
+          mode: 'cors',
+        }
+      );
+
+      const geoData = await geoResponse.json();
+
+      console.log('geoResponse', geoResponse);
+
+      // set lat and lon only if the request is ok
+      if (geoResponse.ok) {
+        console.log('geoData', geoData);
+
+        if (geoData.length > 0) {
+          lat = `${parseFloat(geoData[0].lat)}`;
+          lon = `${parseFloat(geoData[0].lon)}`;
+        }
+
+        locationList = geoData;
+      }
+
+      // return the fetch response so that I can handle any bad requests
+      return { ok: geoResponse.ok, geoDataLength: geoData.length };
+    }
+
+    async function getWeatherData() {
+      console.log('run getWeatherData');
+      const weatherResponse = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=${currentUnitSystem}&appid=${key}`,
+        {
+          mode: 'cors',
+        }
+      );
+
+      console.log('weatherResponse', weatherResponse);
+
+      const weatherData = await weatherResponse.json();
+
+      console.log('log weather data:');
+      console.log(weatherData);
+      console.log(weatherData.main.temp);
+
+      return weatherData.main.temp;
+    }
+
+    async function render(temp: number) {
+      console.log('run render');
+      const city = document.querySelector('.city') as HTMLElement;
+      const state = document.querySelector('.state') as HTMLElement;
+      const country = document.querySelector('.country') as HTMLElement;
+      const temperature = document.querySelector('.temperature') as HTMLElement;
+
+      city.innerText = `${locationList[0].name}, `;
+      state.innerText = `${locationList[0].state}, `;
+      country.innerText = `${locationList[0].country}`;
+      // console.log(getWeatherData());
+      temperature.innerText = `${temp} ${currentTempUnit}`;
+    }
+  }, [currentTempUnit, currentUnitSystem]);
 
   return (
     <div className="weather-wrapper flex flex-col gap-8">
