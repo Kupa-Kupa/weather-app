@@ -16,6 +16,22 @@ function Weather() {
     lng: number;
   }
 
+  interface Marker {
+    lat: number;
+    lon: number;
+    size: number;
+    color: string;
+  }
+
+  const markerSvg = `<svg viewBox="-4 0 36 36">
+    <path fill="currentColor" d="M14,0 C21.732,0 28,5.641 28,12.6 C28,23.963 14,36 14,36 C14,36 0,24.064 0,12.6 C0,5.641 6.268,0 14,0 Z"></path>
+    <circle fill="black" cx="14" cy="14" r="7"></circle>
+  </svg>`;
+
+  const [markerData, setMarkerData] = useState([
+    { lat: -33.8698439, lng: 151.2082848, size: 16, color: 'red' },
+  ]);
+
   const [searchLocation, setSearchLocation] = useState<string | undefined>(
     'sydney'
   );
@@ -162,6 +178,10 @@ function Weather() {
 
     setMapLat(e.lat);
     setMapLon(e.lng);
+
+    const clickData = { lat: e.lat, lng: e.lng, size: 16, color: 'red' };
+
+    setMarkerData([clickData]);
   }
 
   // Position globe to AU on mount
@@ -471,6 +491,16 @@ function Weather() {
           showAtmosphere={false}
           onGlobeClick={getMapCoordinates}
           ref={globeEl}
+          htmlElementsData={markerData}
+          htmlElement={(data: Marker) => {
+            const el = document.createElement('div');
+            el.innerHTML = markerSvg;
+            el.style.color = data.color;
+            el.style.width = `${data.size}px`;
+            el.classList.add('map-marker');
+
+            return el;
+          }}
         />
       </div>
     </div>
