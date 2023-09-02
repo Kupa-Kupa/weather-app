@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import Globe, { GlobeMethods } from 'react-globe.gl';
+import { convertToCoordinates } from '../utils/utils';
 
 function Weather() {
   interface Location {
@@ -9,11 +11,19 @@ function Weather() {
     state: string;
   }
 
+  interface Coordinates {
+    lat: number;
+    lng: number;
+  }
+
   const [searchLocation, setSearchLocation] = useState<string | undefined>(
     'sydney'
   );
   const [currentUnitSystem, setCurrentUnitSystem] = useState('metric');
   const [currentTempUnit, setCurrentTempUnit] = useState('°C');
+
+  const [mapLat, setMapLat] = useState<number | undefined>(undefined);
+  const [mapLon, setMapLon] = useState<number | undefined>(undefined);
 
   const key = import.meta.env.VITE_WEATHER_API_KEY;
 
@@ -77,6 +87,10 @@ function Weather() {
 
     async function getGeoData() {
       console.log('run getGeoData');
+      // if search location is blank then just return as though request was bad
+      if (searchLocation == '' || !searchLocation)
+        return { ok: false, geoDataLength: 0 };
+
       // get lat and lon of location
       const geoResponse = await fetch(
         `https://api.openweathermap.org/geo/1.0/direct?q=${searchLocation}&limit=5&appid=${key}`,
@@ -140,6 +154,94 @@ function Weather() {
     }
   }, [searchLocation, currentTempUnit, currentUnitSystem, key]);
 
+  // Globe code
+  const globeEl = useRef(undefined);
+
+  function getMapCoordinates(e: Coordinates) {
+    console.log(e);
+
+    setMapLat(e.lat);
+    setMapLon(e.lng);
+  }
+
+  // Position globe to AU on mount
+  useEffect(() => {
+    if (globeEl.current) {
+      (globeEl.current as GlobeMethods).pointOfView({
+        lat: -20,
+        lng: 140,
+        altitude: 3,
+      });
+    }
+  }, []);
+
+  // useEffect(() => {
+  //   console.log('Map Lat', mapLat);
+  //   console.log('Map Lon', mapLon);
+  // }, [mapLat, mapLon]);
+
+  useEffect(() => {
+    // clear any previous error messages
+    const errorMessage = document.querySelector(
+      '.error-message'
+    ) as HTMLElement;
+    errorMessage.innerText = ``;
+
+    console.log('Current Coordinates are:', mapLat, mapLon);
+
+    getWeatherForMap();
+
+    async function getWeatherForMap() {
+      console.log('run GetWeatherMap');
+
+      const temp = await getWeatherDataForMap();
+
+      console.log('Temperature', temp);
+
+      if (temp) {
+        renderForMap(temp);
+      }
+    }
+
+    async function getWeatherDataForMap() {
+      console.log('run getWeatherData');
+
+      if (mapLat && mapLon) {
+        const weatherResponse = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${mapLat}&lon=${mapLon}&units=${currentUnitSystem}&appid=${key}`,
+          {
+            mode: 'cors',
+          }
+        );
+
+        console.log('weatherResponse', weatherResponse);
+
+        const weatherData = await weatherResponse.json();
+
+        console.log('log weather data:');
+        console.log(weatherData);
+        console.log(weatherData.main.temp);
+
+        return weatherData.main.temp;
+      }
+    }
+
+    async function renderForMap(temp: number) {
+      console.log('run render');
+      const city = document.querySelector('.city') as HTMLElement;
+      const state = document.querySelector('.state') as HTMLElement;
+      const country = document.querySelector('.country') as HTMLElement;
+      const temperature = document.querySelector('.temperature') as HTMLElement;
+
+      // city.innerText = `Lat: ${mapLat}, `;
+      // state.innerText = `Lon: ${mapLon}`;
+      city.innerText = `${convertToCoordinates(mapLat as number, 'lat')}, `;
+      state.innerText = `${convertToCoordinates(mapLon as number, 'lon')}`;
+      country.innerText = '';
+      temperature.innerText = `${temp} ${currentTempUnit}`;
+    }
+  }, [currentTempUnit, currentUnitSystem, key, mapLat, mapLon]);
+
   return (
     <div className="weather-wrapper flex flex-col gap-8">
       <div className="px-6 flex justify-center gap-4 max-lg:flex-col max-lg:items-center">
@@ -193,6 +295,17 @@ function Weather() {
       <small className="display-info">
         Temperature is currently displaying in {currentTempUnit}
       </small>
+
+      <div className="globe-container">
+        <Globe
+          backgroundColor="rgba(0,0,0,0)"
+          globeImageUrl="/earth-blue-marble.jpg"
+          showGraticules={true}
+          showAtmosphere={false}
+          onGlobeClick={getMapCoordinates}
+          ref={globeEl}
+        />
+      </div>
     </div>
   );
 }

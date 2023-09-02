@@ -5,3 +5,14 @@
   /* padding: 2rem; */
   text-align: center;
 }
+
+.globe-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 800px;
+  max-height: 600px;
+  overflow: hidden;
+
+  margin: 4rem auto;
+}
