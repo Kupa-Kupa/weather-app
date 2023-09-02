@@ -15,4 +15,7 @@
   overflow: hidden;
 
   margin: 4rem auto;
+
+  border: 1px solid #c9ddf7;
+  border-radius: 8px;
 }
