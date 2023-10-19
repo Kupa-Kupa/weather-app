@@ -1,27 +1,29 @@
-# React + TypeScript + Vite
+# Weather Around The Globe
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+[Live Demo](https://kupa-kupa.github.io/weather-app/)
 
-Currently, two official plugins are available:
+You can search for any city to check its current weather, or click anywhere on the globe to check the weather at those coordinates.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Weather data is obtained by making requests to OpenWeatherMap's Current Weather Data API and Location data is obtained by making requests to OpenWeatherMap's Geocoding API.
 
-## Expanding the ESLint configuration
+The globe visualisation is done with react-globe.gl.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+This weather app was built using [Vite](https://vitejs.dev/), [React](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [OpenWeatherMap](https://openweathermap.org/current), [react-globe.gl](https://github.com/vasturiano/react-globe.gl) and [tailwindcss](https://tailwindcss.com/).
 
-- Configure the top-level `parserOptions` property like this:
+## Scripts
 
-```js
-   parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-   },
+### dev
+
+```
+$ npm run dev
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+This script will run "[vite](https://vitejs.dev/guide/cli.html#vite)", which will start a local web server with [Hot Module Replacement](https://vitejs.dev/guide/features.html#hot-module-replacement) for development
+
+### build
+
+```
+$ npm run build
+```
+
+This script will run "[tsc](https://www.typescriptlang.org/docs/handbook/compiler-options.html) && [vite build](https://vitejs.dev/guide/cli.html#vite-build)", and generate an application bundle in ./dist
